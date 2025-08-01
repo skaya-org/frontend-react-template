@@ -1,1 +1,0 @@
-A default component folder to keep my components
