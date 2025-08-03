@@ -1,525 +1,239 @@
-import React, { JSX, useRef } from 'react';
-import { motion, Variants, useScroll, useSpring } from 'framer-motion';
+import React, { useState, useEffect, useRef, JSX } from 'react';
+import { motion, useScroll, useTransform, Variants } from 'framer-motion';
 
-// --- Interfaces ---
-
+// As per instructions, interfaces should be created with an export
+// so they can be imported in other components.
 /**
- * Represents a single item in the timeline.
+ * Interface for a single event on the timeline.
  */
-export interface TimelineItem {
-  id: number | string;
-  date: string;
+export interface ITimelineEvent {
+  year: string;
   title: string;
-  description: string;
-  side: 'left' | 'right';
+  description:string;
 }
 
-/**
- * Represents a single project item, matching the ProjectsSection component props.
- */
-export interface Project {
-  title: string;
-  description: string;
-  imageUrl: string;
-  projectUrl?: string;
-  repoUrl?: string;
-}
-
-/**
- * Represents the data structure for the contact form submission.
- */
-export interface ContactFormData {
-  name: string;
-  email: string;
-  message: string;
-}
-
-/**
- * Props for the Homepage component.
- */
-export interface HomepageProps {
-  heroText?: string;
-  heroSubtitle?: string;
-  timelineTitle?: string;
-  timelineData?: TimelineItem[];
-  aboutMeTitle?: string;
-  aboutMeDescription?: string | React.ReactNode;
-  aboutMeImageUrl?: string;
-  projectsTitle?: string;
-  projectsData?: Project[];
-  contactTitle?: string;
-  onContactSubmit?: (formData: ContactFormData) => Promise<void>;
-}
-
-// --- Helper Data ---
-
-// Mock data for the timeline section, used as a default
-const defaultTimelineData: TimelineItem[] = [
+// Data and constants are defined outside the component to prevent re-declaration on re-renders.
+const TIMELINE_DATA: ITimelineEvent[] = [
   {
-    id: 1,
-    date: 'Q1 2022',
-    title: 'DeFi Lending Protocol Launch',
-    description: 'Architected and launched a decentralized lending protocol on Ethereum, handling over $10M in TVL within the first month.',
-    side: 'left',
+    year: "2018",
+    title: "Entry into Blockchain",
+    description: "Started my journey by exploring Bitcoin and Ethereum. Wrote my first 'Hello World' smart contract on Solidity.",
   },
   {
-    id: 2,
-    date: 'Q3 2022',
-    title: 'NFT Marketplace Smart Contracts',
-    description: 'Developed and audited the ERC-721 and ERC-1155 smart contracts for a high-volume NFT marketplace, ensuring security and gas efficiency.',
-    side: 'right',
+    year: "2019",
+    title: "First dApp Project",
+    description: "Developed and deployed a decentralized voting application on the Ropsten testnet, learning about Truffle, Ganache, and Web3.js.",
   },
   {
-    id: 3,
-    date: 'Q1 2023',
-    title: 'Zero-Knowledge Proof Integration',
-    description: 'Led the integration of ZK-SNARKs for a private transaction feature on a Layer 2 scaling solution, enhancing user privacy.',
-    side: 'left',
+    year: "2020",
+    title: "DeFi Exploration & Security",
+    description: "Contributed to an open-source DeFi lending protocol. Focused on security audits and gas optimization for smart contracts.",
   },
   {
-    id: 4,
-    date: 'Q4 2023',
-    title: 'Security Audit & Tokenomics',
-    description: 'Conducted comprehensive security audits for multiple protocols and designed sustainable tokenomics models for new blockchain ventures.',
-    side: 'right',
+    year: "2021",
+    title: "Lead Blockchain Developer",
+    description: "Led a team to build a cross-chain NFT marketplace, integrating with Layer 2 solutions like Polygon for scalability.",
   },
   {
-    id: 5,
-    date: 'Q2 2024',
-    title: 'Real-World Asset Tokenization',
-    description: 'Pioneered a platform for tokenizing real-world assets (RWA), bridging traditional finance with decentralized networks.',
-    side: 'left',
+    year: "2022",
+    title: "DAO & Governance Models",
+    description: "Architected and implemented a decentralized autonomous organization (DAO) governance model for a community-driven project.",
+  },
+  {
+    year: "2023",
+    title: "Web3 Consulting & Mentorship",
+    description: "Started consulting for Web3 startups, advising on tokenomics, security best practices, and protocol architecture.",
   },
 ];
 
-// Mock data for the projects section
-const defaultProjectsData: Project[] = [
-  {
-    title: 'Decentralized Exchange Aggregator',
-    description: 'A platform that provides the best token swap rates by fetching data from multiple DEXs, ensuring optimal trading for users.',
-    imageUrl: 'https://images.unsplash.com/photo-1642104791138-224152542475?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=600',
-    projectUrl: '#',
-    repoUrl: '#',
-  },
-  {
-    title: 'On-Chain Governance Portal',
-    description: 'A user-friendly interface for token holders to create and vote on governance proposals, driving community-led protocol development.',
-    imageUrl: 'https://images.unsplash.com/photo-1639322537228-f710d846310a?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=600',
-    projectUrl: '#',
-  },
-  {
-    title: 'Cross-Chain NFT Bridge',
-    description: 'An innovative solution allowing users to seamlessly transfer their NFTs between Ethereum, Polygon, and other compatible blockchains.',
-    imageUrl: 'https://images.unsplash.com/photo-1640459392188-733d36481f19?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=600',
-    repoUrl: '#',
-  },
+const TYPEWRITER_TEXTS = [
+  "Blockchain Developer",
+  "Smart Contract Expert",
+  "DeFi Architect",
+  "Web3 Innovator"
 ];
 
-// Default handler for the contact form submission to ensure functionality
-const defaultOnContactSubmit = async (formData: ContactFormData) => {
-    console.log("Form submitted:", formData);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    alert(`Thank you, ${formData.name}! Your message has been sent.`);
-};
-
+const TYPING_SPEED = 120;
+const DELETING_SPEED = 60;
+const PAUSE_DURATION = 2000;
 
 // --- Animation Variants ---
 
-const sentenceVariant: Variants = {
-  hidden: { opacity: 1 },
+// Variants for the hero section container to orchestrate staggered animations.
+const heroContainerVariants: Variants = {
+  hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      delay: 0.5,
-      staggerChildren: 0.04,
-    },
-  },
-};
-
-const letterVariant: Variants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      type: 'spring',
-      damping: 12,
-      stiffness: 200,
-    },
-  },
-};
-
-const timelineTitleVariants: Variants = {
-  hidden: { opacity: 0, y: -30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.6,
-      ease: 'easeOut',
-    },
-  },
-};
-
-const timelineItemsContainerVariants: Variants = {
-  hidden: {},
-  visible: {
     transition: {
       staggerChildren: 0.3,
+      delayChildren: 0.2,
     },
   },
 };
 
-const timelineItemVariant = (side: 'left' | 'right'): Variants => ({
-  hidden: { opacity: 0, x: side === 'left' ? -100 : 100 },
+// Variants for individual items within the hero section.
+const heroItemVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: "easeOut"
+    }
+  },
+};
+
+// Variants for the "My Journey" title.
+const journeyTitleVariants: Variants = {
+  hidden: { opacity: 0, y: -50 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.6,
+      ease: "easeOut",
+    },
+  },
+};
+
+// Variants for timeline items. Uses a custom prop to determine animation direction.
+const timelineItemVariants: Variants = {
+  hidden: (isLeft: boolean) => ({
+    opacity: 0,
+    x: isLeft ? -100 : 100,
+  }),
   visible: {
     opacity: 1,
     x: 0,
     transition: {
       duration: 0.6,
-      ease: 'easeOut',
-    },
-  },
-});
-
-const sectionVariants: Variants = {
-  hidden: { opacity: 0, y: 50 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.8,
-      ease: 'easeOut',
-      staggerChildren: 0.2
+      ease: "easeOut",
     },
   },
 };
 
-// --- NEW VARIANTS ADDED FOR ABOUT, PROJECTS, AND CONTACT ---
+/**
+ * Homepage component for a blockchain developer portfolio.
+ * Features a typewriter effect in the hero section and an animated timeline of experience.
+ */
+const Homepage = (): JSX.Element => {
+  // --- Typewriter Effect Logic ---
+  const [wordIndex, setWordIndex] = useState(0);
+  const [text, setText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
-const aboutContentVariants: Variants = {
-  hidden: {},
-  visible: {
-    transition: {
-      staggerChildren: 0.2,
-    },
-  },
-};
+  useEffect(() => {
+    const handleTyping = () => {
+      const currentWord = TYPEWRITER_TEXTS[wordIndex];
+      const nextText = isDeleting
+        ? currentWord.substring(0, text.length - 1)
+        : currentWord.substring(0, text.length + 1);
 
-const aboutImageVariants: Variants = {
-  hidden: { opacity: 0, scale: 0.8 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: { duration: 0.5, ease: 'easeOut' },
-  },
-};
+      setText(nextText);
 
-const aboutTextVariants: Variants = {
-  hidden: { opacity: 0, x: 50 },
-  visible: {
-    opacity: 1,
-    x: 0,
-    transition: { duration: 0.6, ease: 'easeOut' },
-  },
-};
+      if (!isDeleting && nextText === currentWord) {
+        setTimeout(() => setIsDeleting(true), PAUSE_DURATION);
+      } else if (isDeleting && nextText === '') {
+        setIsDeleting(false);
+        setWordIndex((prev) => (prev + 1) % TYPEWRITER_TEXTS.length);
+      }
+    };
 
-const projectCardVariants: Variants = {
-  hidden: { opacity: 0, y: 50 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.5,
-      ease: 'easeOut',
-    },
-  },
-};
+    const timer = setTimeout(handleTyping, isDeleting ? DELETING_SPEED : TYPING_SPEED);
 
-const formContainerVariants: Variants = {
-  hidden: { opacity: 0, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: {
-      duration: 0.5,
-      ease: 'easeOut',
-      staggerChildren: 0.15,
-    }
-  }
-};
-
-const formFieldVariants: Variants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4, ease: 'easeOut' }
-  }
-};
+    return () => clearTimeout(timer);
+  }, [wordIndex, isDeleting, text]);
 
 
-// --- Main Component ---
-
-const Homepage = ({
-  heroText = "Blockchain Developer",
-  heroSubtitle = "Architecting the Future of Decentralized Systems",
-  timelineTitle = "My Journey & Contributions",
-  timelineData = defaultTimelineData,
-  aboutMeTitle = "About Me",
-  aboutMeDescription = "I am a passionate blockchain engineer with over 5 years of experience in designing, developing, and deploying secure and scalable decentralized applications. My expertise lies in smart contract development, DeFi protocols, and Web3 integration. I am driven by the potential of blockchain to revolutionize industries and create more transparent, efficient, and equitable systems.",
-  aboutMeImageUrl = "https://images.unsplash.com/photo-1618005198919-d3d4b5a92ead?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=600",
-  projectsTitle = "My Projects",
-  projectsData = defaultProjectsData,
-  contactTitle = "Get In Touch",
-  onContactSubmit = defaultOnContactSubmit,
-}: HomepageProps): JSX.Element => {
-  const timelineRef = useRef<HTMLElement>(null);
+  // --- Timeline Animation Logic ---
+  const timelineRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: timelineRef,
-    offset: ["start end", "end start"],
-  });
-  const scaleY = useSpring(scrollYProgress, {
-    stiffness: 100,
-    damping: 30,
-    restDelta: 0.001,
+    offset: ["start end", "end end"]
   });
 
-  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formEl = event.currentTarget;
-    const formData = new FormData(formEl);
-    const data: ContactFormData = {
-      name: formData.get('name') as string,
-      email: formData.get('email') as string,
-      message: formData.get('message') as string,
-    };
-    onContactSubmit(data).then(() => {
-        formEl.reset();
-    });
-  };
+  const timelineLineHeight = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
 
   return (
-    <div className="bg-gray-900 text-gray-50 font-sans overflow-x-hidden antialiased">
-      {/* HERO SECTION */}
-      <section className="min-h-screen flex flex-col items-center justify-center text-center p-4 bg-grid-gray-700/[0.2]">
+    <div className="bg-[#0a0a0a] text-gray-200 font-mono min-h-[200vh] overflow-x-hidden">
+      {/* Hero Section with Typewriter */}
+      <motion.section
+        className="h-screen flex flex-col justify-center items-center text-center px-5"
+        variants={heroContainerVariants as Variants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.p className="text-2xl text-gray-400" variants={heroItemVariants as Variants}>
+          Hello, I'm a
+        </motion.p>
         <motion.h1
-          className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600 mb-4"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
+          className="text-[clamp(2rem,8vw,4.5rem)] font-bold text-[#4dffaf] h-24 flex items-center"
+          variants={heroItemVariants as Variants}
         >
-          {heroSubtitle}
-        </motion.h1>
-        
-        <motion.div
-          className="font-mono text-xl md:text-3xl text-gray-300 mt-2 flex items-center"
-          variants={sentenceVariant}
-          initial="hidden"
-          animate="visible"
-        >
-          <span className="text-blue-400 mr-2">&gt;</span>
-          {heroText.split("").map((char, index) => (
-            <motion.span key={`${char}-${index}`} variants={letterVariant}>
-              {char}
-            </motion.span>
-          ))}
-          <motion.span
-            className="w-0.5 h-8 bg-gray-50 ml-2"
+          <span>{text}</span>
+          <motion.div
+            className="inline-block w-1 h-[clamp(2.2rem,8vw,4.7rem)] bg-[#4dffaf] ml-2"
             animate={{ opacity: [0, 1, 0] }}
             transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
-          ></motion.span>
-        </motion.div>
-      </section>
+          />
+        </motion.h1>
+      </motion.section>
 
-      {/* TIMELINE SECTION */}
-      <section ref={timelineRef} className="relative w-full max-w-6xl mx-auto py-20 px-4 md:px-8">
+      {/* Timeline Section */}
+      <section id="journey" className="py-24 px-5 relative">
         <motion.h2
-          className="text-center font-bold text-3xl md:text-4xl lg:text-5xl mb-24 text-gray-100"
-          variants={timelineTitleVariants}
+          className="text-center text-4xl mb-20 text-white font-bold"
+          variants={journeyTitleVariants as Variants}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.5 }}
         >
-          {timelineTitle}
+          My Journey
         </motion.h2>
-        
-        <div className="relative">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 h-full w-0.5 bg-gray-700 hidden md:block" aria-hidden="true"></div>
-          <motion.div 
-            className="absolute top-0 left-1/2 -translate-x-1/2 h-full w-0.5 bg-blue-500 origin-top hidden md:block" 
-            style={{ scaleY }}
-            aria-hidden="true"
-          />
-          
+        <div className="relative max-w-5xl mx-auto" ref={timelineRef}>
+          {/* Background line */}
+          <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-gray-800 -translate-x-1/2"></div>
+          {/* Progress line */}
           <motion.div
-            className="relative flex flex-col items-center gap-10"
-            variants={timelineItemsContainerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.1 }}
-          >
-            {timelineData.map((item) => (
+            className="absolute left-1/2 top-0 w-1 bg-[#4dffaf] -translate-x-1/2"
+            style={{ height: timelineLineHeight }}
+          />
+          {TIMELINE_DATA.map((item, index) => {
+            const isLeft = index % 2 === 0;
+
+            return (
               <motion.div
-                key={item.id}
-                className={`relative flex w-full items-start
-                            md:w-1/2 ${item.side === 'left' ? 'md:self-start' : 'md:self-end'}`}
-                variants={timelineItemVariant(item.side)}
+                className={`relative w-1/2 p-2.5 px-10 box-border
+                  ${isLeft ? 'left-0' : 'left-1/2'}
+                  after:content-[''] after:absolute after:w-[25px] after:h-[25px] after:bg-[#0a0a0a]
+                  after:border-4 after:border-[#4dffaf] after:top-[25px] after:rounded-full after:z-10
+                  ${isLeft ? 'after:right-[-14.5px]' : 'after:left-[-14.5px]'}`
+                }
+                key={item.year}
+                variants={timelineItemVariants as Variants}
+                custom={isLeft}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.3 }}
               >
-                <div className="flex flex-col items-center mr-4 md:hidden">
-                  <div className="w-4 h-4 rounded-full bg-blue-500 border-2 border-gray-900 z-10"></div>
-                  <div className="w-0.5 grow bg-gray-700 mt-2"></div>
-                </div>
-
                 <div
-                  className={`hidden md:block absolute top-2 w-4 h-4 rounded-full bg-blue-500 z-10 border-2 border-gray-900
-                              ${item.side === 'left' ? 'right-0 translate-x-[calc(50%+1px)]' : 'left-0 -translate-x-[calc(50%+1px)]'}`}
-                  aria-hidden="true"
-                ></div>
-
-                <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/80 rounded-lg p-6 w-full shadow-lg shadow-black/30">
-                  <div
-                    className={`hidden md:block absolute top-4 w-4 h-4 bg-gray-800/80 border-gray-700/80
-                                ${item.side === 'left' ? 'right-0 translate-x-1/2 border-r border-t rotate-45' : 'left-0 -translate-x-1/2 border-l border-b -rotate-45'}`}
-                    aria-hidden="true"
-                  ></div>
-
-                  <p className="text-blue-400 font-semibold mb-1 text-sm">{item.date}</p>
-                  <h3 className="text-lg font-bold text-gray-50 mb-2">{item.title}</h3>
-                  <p className="text-gray-400 text-base leading-relaxed">{item.description}</p>
+                  className={`relative p-5 sm:p-7 bg-[#1a1a1a] rounded-md border border-gray-700 shadow-lg shadow-black/20
+                    ${isLeft ? 'text-right' : 'text-left'}
+                    after:content-[''] after:absolute after:top-7 after:w-0 after:h-0
+                    after:border-[10px] after:border-transparent
+                    ${isLeft ? 'after:right-[-20px] after:border-l-gray-700' : 'after:left-[-20px] after:border-r-gray-700'}`
+                  }
+                >
+                  <h3 className="text-2xl font-bold text-[#4dffaf] mb-1">{item.year}</h3>
+                  <h4 className="text-lg font-bold text-white mb-2.5">{item.title}</h4>
+                  <p className="text-sm text-gray-400 leading-relaxed">{item.description}</p>
                 </div>
               </motion.div>
-            ))}
-          </motion.div>
+            );
+          })}
         </div>
       </section>
-      
-      {/* ABOUT ME SECTION */}
-      <motion.section
-        className="w-full max-w-6xl mx-auto py-20 px-4 md:px-8"
-        variants={sectionVariants as Variants}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.2 }}
-      >
-        <motion.h2 className="text-center font-bold text-3xl md:text-4xl lg:text-5xl mb-16 text-gray-100" variants={timelineTitleVariants as Variants}>{aboutMeTitle}</motion.h2>
-        <motion.div
-          className="flex flex-col md:flex-row items-center justify-center gap-12 md:gap-16"
-          variants={aboutContentVariants as Variants}
-        >
-          <motion.div 
-            className="w-64 h-64 md:w-80 md:h-80 flex-shrink-0"
-            variants={aboutImageVariants as Variants}
-          >
-            <img src={aboutMeImageUrl} alt="A portrait of the developer" className="rounded-full w-full h-full object-cover border-4 border-gray-700 shadow-xl shadow-blue-500/20"/>
-          </motion.div>
-          <motion.div 
-            className="text-center md:text-left max-w-xl"
-            variants={aboutTextVariants as Variants}
-          >
-            <p className="text-lg text-gray-300 leading-relaxed">{aboutMeDescription}</p>
-          </motion.div>
-        </motion.div>
-      </motion.section>
-
-      {/* PROJECTS SECTION */}
-      <motion.section
-        className="w-full max-w-7xl mx-auto py-20 px-4 md:px-8"
-        variants={sectionVariants as Variants}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.1 }}
-      >
-        <motion.h2 className="text-center font-bold text-3xl md:text-4xl lg:text-5xl mb-16 text-gray-100" variants={timelineTitleVariants as Variants}>{projectsTitle}</motion.h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-          {projectsData.map((project, index) => (
-            <motion.div
-              key={index}
-              className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/80 rounded-xl overflow-hidden shadow-lg shadow-black/30 flex flex-col transition-all duration-300 hover:border-blue-500/80 hover:shadow-blue-500/20 hover:-translate-y-2"
-              variants={projectCardVariants as Variants}
-            >
-              <img src={project.imageUrl} alt={project.title} className="w-full h-52 object-cover" />
-              <div className="p-6 flex flex-col flex-grow">
-                <h3 className="text-xl font-bold text-gray-50 mb-2">{project.title}</h3>
-                <p className="text-gray-400 text-base leading-relaxed flex-grow mb-6">{project.description}</p>
-                <div className="flex items-center gap-4 mt-auto pt-4 border-t border-gray-700/50">
-                  {project.projectUrl && (
-                    <a href={project.projectUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-sm font-semibold text-blue-400 hover:text-blue-300 transition-colors duration-200">
-                      View Project
-                      <span className="ml-1.5">&#8599;</span>
-                    </a>
-                  )}
-                  {project.repoUrl && (
-                    <a href={project.repoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-sm font-semibold text-gray-400 hover:text-gray-200 transition-colors duration-200">
-                      Code Repo
-                    </a>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </motion.section>
-
-      {/* CONTACT ME SECTION */}
-      <motion.section
-        className="w-full max-w-4xl mx-auto py-20 px-4 md:px-8"
-        variants={sectionVariants as Variants}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.2 }}
-      >
-        <motion.h2
-          className="text-center font-bold text-3xl md:text-4xl lg:text-5xl mb-12 text-gray-100"
-          variants={timelineTitleVariants as Variants}
-        >
-          {contactTitle}
-        </motion.h2>
-        <motion.div a
-          className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/80 rounded-xl p-8 shadow-2xl shadow-black/40"
-          variants={formContainerVariants as Variants}
-        >
-            <form onSubmit={handleFormSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <motion.div variants={formFieldVariants as Variants}>
-                        <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">Name</label>
-                        <input
-                            type="text" id="name" name="name" required
-                            className="block w-full px-4 py-3 rounded-md bg-gray-800 border border-gray-600 text-gray-50 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                            placeholder="Ada Lovelace"
-                        />
-                    </motion.div>
-                    <motion.div variants={formFieldVariants as Variants}>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">Email</label>
-                        <input
-                            type="email" id="email" name="email" required
-                            className="block w-full px-4 py-3 rounded-md bg-gray-800 border border-gray-600 text-gray-50 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                            placeholder="ada@example.com"
-                        />
-                    </motion.div>
-                </div>
-                <motion.div variants={formFieldVariants as Variants}>
-                    <label htmlFor="message" className="block text-sm font-medium text-gray-300 mb-2">Message</label>
-                    <textarea
-                        id="message" name="message" rows={5} required
-                        className="block w-full px-4 py-3 rounded-md bg-gray-800 border border-gray-600 text-gray-50 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 resize-y"
-                        placeholder="Your inquiry, project idea, or greeting..."
-                    ></textarea>
-                </motion.div>
-                <motion.div className="text-center md:text-right" variants={formFieldVariants as Variants}>
-                    <motion.button
-                        type="submit"
-                        className="inline-block w-full md:w-auto px-10 py-3 font-bold text-white bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-blue-500"
-                        whileHover={{ scale: 1.05, boxShadow: "0px 0px 15px rgba(109, 40, 217, 0.5)" }}
-                        whileTap={{ scale: 0.95 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                    >
-                        Send Message
-                    </motion.button>
-                </motion.div>
-            </form>
-        </motion.div>
-      </motion.section>
     </div>
   );
 };
