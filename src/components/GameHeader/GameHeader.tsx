@@ -1,224 +1,220 @@
-import React, { useState, useCallback, JSX } from 'react';
-import { motion, Variants, AnimatePresence } from 'framer-motion';
+import React, { JSX, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { animate } from 'motion';
+import { motion, Variants } from 'framer-motion';
 
-// --- Animation Variants ---
+// ============================================================================
+// CONSTANTS
+// All component data is hardcoded here to ensure zero prop drilling.
+// ============================================================================
 
 /**
- * Variants for the main header container.
- * Animates the header sliding down and fading in. It also orchestrates
- * the animation of its children with a stagger effect.
+ * @constant LOGO_DATA
+ * @description Configuration for the game logo, including its image source,
+ * alt text for accessibility, and navigation path.
+ */
+const LOGO_DATA = {
+  src: 'https://picsum.photos/seed/vaporwave-logo/180/50.webp',
+  alt: 'Synth Runner Game Logo',
+  path: '/',
+};
+
+/**
+ * @constant NAV_LINKS
+ * @description An array of navigation link objects for the header menu.
+ * Each object contains a display label and a destination path.
+ */
+const NAV_LINKS: Readonly<{ label: string; path: string }[]> = [
+  { label: 'Features', path: '/features' },
+  { label: 'Gallery', path: '/gallery' },
+];
+
+/**
+ * @constant CTA_BUTTON
+ * @description Configuration for the primary Call-to-Action (CTA) button.
+ * Includes the button's text label and its destination path.
+ */
+const CTA_BUTTON = {
+  label: 'Wishlist Now',
+  path: '/wishlist',
+};
+
+// ============================================================================
+// ANIMATION VARIANTS
+// Framer Motion variants for orchestrating the component's animations.
+// ============================================================================
+
+/**
+ * @constant headerVariants
+ * @description Variants for the main header container. It orchestrates a
+ * staggered animation for its direct children.
  */
 const headerVariants: Variants = {
-    hidden: {
-        y: -50,
-        opacity: 0,
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.15,
+      delayChildren: 0.2,
     },
-    visible: {
-        y: 0,
-        opacity: 1,
-        transition: {
-            duration: 0.5,
-            ease: 'easeOut',
-            when: 'beforeChildren',
-            staggerChildren: 0.2,
-        },
-    },
+  },
 };
 
 /**
- * Variants for the individual items within the header (Level, Score, Button).
- * Animates each item fading in and moving up into place.
+ * @constant headerChildVariants
+ * @description Variants for individual children within the header.
+ * Each child will fade in and slide down from above.
  */
-const itemVariants: Variants = {
-    hidden: {
-        y: 20,
-        opacity: 0,
+const headerChildVariants: Variants = {
+  hidden: { y: -30, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: 'spring',
+      stiffness: 120,
+      damping: 14,
     },
-    visible: {
-        y: 0,
-        opacity: 1,
-        transition: {
-            duration: 0.4,
-            ease: 'easeOut',
-        },
-    },
+  },
 };
 
-/**
- * Variants for the Play/Pause icons.
- * Controls the enter and exit animations for the icon swap.
- */
-const iconVariants: Variants = {
-    initial: {
-        opacity: 0,
-        scale: 0.5,
-        rotate: -90,
-    },
-    animate: {
-        opacity: 1,
-        scale: 1,
-        rotate: 0,
-        transition: {
-            duration: 0.2,
-            ease: 'easeOut',
-        },
-    },
-    exit: {
-        opacity: 0,
-        scale: 0.5,
-        rotate: 90,
-        transition: {
-            duration: 0.2,
-            ease: 'easeIn',
-        },
-    },
-};
-
-// --- Constants ---
+// ============================================================================
+// HELPER COMPONENTS
+// Internal components to keep the main component's render logic clean.
+// ============================================================================
 
 /**
- * @constant CURRENT_LEVEL
- * @description The current level to be displayed. This is static data to ensure
- * the component is self-contained and does not require props from a parent.
- * @type {number}
- */
-const CURRENT_LEVEL: number = 5;
-
-/**
- * @constant INITIAL_SCORE
- * @description The initial score to be displayed. This is static data, making
- * the component independent. The score is formatted with `toLocaleString` for readability.
- * @type {number}
- */
-const INITIAL_SCORE: number = 12500;
-
-
-// --- Child Components / Icons ---
-
-/**
- * Renders the SVG for the pause symbol.
- * @returns {JSX.Element} The SVG element for the pause icon.
- */
-const PauseIcon = (): JSX.Element => (
-    <svg
-        className="w-6 h-6"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-        xmlns="http://www.w3.org/2000/svg"
-        aria-hidden="true"
-    >
-        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-    </svg>
-);
-
-/**
- * Renders the SVG for the play/resume symbol.
- * @returns {JSX.Element} The SVG element for the play icon.
- */
-const PlayIcon = (): JSX.Element => (
-     <svg
-        className="w-6 h-6"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-        xmlns="http://www.w3.org/2000/svg"
-        aria-hidden="true"
-    >
-        <path d="M8 5v14l11-7z" />
-    </svg>
-);
-
-
-// --- Main Component ---
-
-/**
- * GameHeader is a self-contained component that displays game-related information
- * such as the current level and score. It also includes a pause button with its
- * own internal state management.
+ * NavLinkItem
  *
- * This component is designed to be fully independent and does not require any props.
- * All data is provided by internal constants. It is expected to be wrapped in an
- * ErrorBoundary in the application's layout to handle any potential rendering errors gracefully.
+ * A private helper component that renders a single navigation link with a
+ * self-contained hover state, following React best practices.
  *
- * @component
- * @returns {JSX.Element} The rendered game header component.
+ * @param {object} props - The properties for the navigation link.
+ * @param {string} props.label - The text to display for the link.
+ * @param {string} props.path - The navigation path for the link.
+ * @returns {JSX.Element} A list item containing a styled navigation link.
+ */
+const NavLinkItem = ({
+  label,
+  path,
+}: {
+  label: string;
+  path: string;
+}): JSX.Element => {
+  return (
+    // The list item itself will be animated by its parent `ul` or `nav`.
+    // We add interactive hover and tap animations here for better user feedback.
+    <motion.li whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+      <Link
+        to={path}
+        className="text-[#00ffff] text-base font-semibold uppercase tracking-[0.05em] transition-all duration-300 ease-in-out hover:text-white hover:[text-shadow:0_0_8px_#00ffff,0_0_12px_#00ffff]"
+      >
+        {label}
+      </Link>
+    </motion.li>
+  );
+};
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
+
+/**
+ * GameHeader
+ *
+ * A static, production-grade navigation header for a game's landing page.
+ * It is designed with a striking vaporwave aesthetic, featuring a logo,
+ * navigation links, and a "Wishlist Now" button with a pulsating neon glow.
+ *
+ * This component is self-contained and does not accept any props, as all its
+ * data is hardcoded internally. It uses Framer Motion for entrance animations
+ * and `motion` for the performant CTA button glow.
+ *
+ * @returns {JSX.Element} The fully rendered GameHeader component.
  */
 const GameHeader = (): JSX.Element => {
-    /**
-     * @state {boolean} isPaused - Manages the pause state of the game internally.
-     * `true` if the game is considered paused, `false` otherwise.
-     */
-    const [isPaused, setIsPaused] = useState<boolean>(false);
+  const ctaRef = useRef<HTMLDivElement>(null);
 
-    /**
-     * Toggles the internal pause state. This is a self-contained action and does not
-     * affect any parent component's state, adhering to the component's design principles.
-     * It is memoized with `useCallback` for performance optimization, preventing
-     * re-creation on re-renders.
-     *
-     * @function handlePauseToggle
-     */
-    const handlePauseToggle = useCallback(() => {
-        setIsPaused(prevState => !prevState);
-        // In a real application, this callback might dispatch a global state change,
-        // emit an event, or call a game engine API. For this component, it only
-        // toggles the icon to demonstrate internal state management.
-    }, []);
+  /**
+   * This effect applies a pulsating neon glow animation to the CTA button
+   * on component mount. It leverages the `motion` library for direct DOM
+   * animation, ensuring high performance. A cleanup function stops the
+   * animation when the component unmounts to prevent memory leaks.
+   * This functionality is preserved as per the original component.
+   */
+  useEffect(() => {
+    const element = ctaRef.current;
+    if (!element) return;
 
-    return (
-        <motion.header
-            className="flex justify-between items-center py-4 px-8 bg-gray-800 text-gray-200 font-sans border-b-2 border-gray-700 select-none shadow-lg"
-            role="banner"
-            variants={headerVariants as Variants}
-            initial="hidden"
-            animate="visible"
-        >
-            <motion.div
-                className="text-xl font-bold"
-                variants={itemVariants as Variants}
-            >
-                Level {CURRENT_LEVEL}
-            </motion.div>
-            <motion.div
-                className="text-xl font-bold tabular-nums"
-                variants={itemVariants as Variants}
-            >
-                Score: {INITIAL_SCORE.toLocaleString()}
-            </motion.div>
-            <motion.button
-                className="p-2 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-800 hover:bg-white/10"
-                onClick={handlePauseToggle}
-                aria-label={isPaused ? 'Resume Game' : 'Pause Game'}
-                title={isPaused ? 'Resume Game' : 'Pause Game'}
-                variants={itemVariants as Variants}
-                whileHover={{ scale: 1.1, backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
-                whileTap={{ scale: 0.9, transition: { duration: 0.1 } }}
-            >
-                <AnimatePresence mode="wait" initial={false}>
-                    {isPaused ? (
-                        <motion.span
-                            key="play"
-                            variants={iconVariants as Variants}
-                            initial="initial"
-                            animate="animate"
-                            exit="exit"
-                        >
-                            <PlayIcon />
-                        </motion.span>
-                    ) : (
-                        <motion.span
-                            key="pause"
-                            variants={iconVariants as Variants}
-                            initial="initial"
-                            animate="animate"
-                            exit="exit"
-                        >
-                            <PauseIcon />
-                        </motion.span>
-                    )}
-                </AnimatePresence>
-            </motion.button>
-        </motion.header>
+    const animation = animate(
+      element,
+      {
+        boxShadow: [
+          '0 0 10px #ff00ff, 0 0 20px #ff00ff, inset 0 0 5px #ff00ff',
+          '0 0 20px #ff00ff, 0 0 30px #ff00ff, inset 0 0 10px #ff00ff',
+          '0 0 10px #ff00ff, 0 0 20px #ff00ff, inset 0 0 5px #ff00ff',
+        ],
+      },
+      {
+        duration: 2.5,
+        repeat: Infinity,
+        ease: 'easeInOut',
+      },
     );
+
+    return () => animation.stop();
+  }, []); // Empty dependency array ensures this effect runs only once.
+
+  return (
+    <motion.header
+      className="sticky top-0 z-50 flex items-center justify-between border-b-2 border-[#ff00ff] bg-[#1a103c]/85 px-10 py-4 font-sans backdrop-blur-[10px]"
+      variants={headerVariants as Variants}
+      initial="hidden"
+      animate="visible"
+    >
+      {/* Left side: Logo */}
+      <motion.div variants={headerChildVariants as Variants}>
+        <Link to={LOGO_DATA.path}>
+          <img
+            src={LOGO_DATA.src}
+            alt={LOGO_DATA.alt}
+            className="block h-[50px] w-auto"
+          />
+        </Link>
+      </motion.div>
+
+      {/* Right side: Navigation and CTA Button */}
+      <div className="flex items-center gap-10">
+        <motion.nav variants={headerChildVariants as Variants}>
+          <ul className="flex list-none gap-8 p-0 m-0">
+            {NAV_LINKS.map((link) => (
+              <NavLinkItem
+                key={link.label}
+                label={link.label}
+                path={link.path}
+              />
+            ))}
+          </ul>
+        </motion.nav>
+
+        {/* Animated CTA Button */}
+        <motion.div
+          variants={headerChildVariants as Variants}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <div ref={ctaRef} className="rounded-md">
+            <Link
+              to={CTA_BUTTON.path}
+              className="block rounded-md border-2 border-[#ff00ff] bg-[#ff00ff]/10 px-6 py-3 font-bold text-white transition-colors duration-300 ease-in-out hover:bg-[#ff00ff]/20 [text-shadow:0_0_5px_#ff00ff,0_0_10px_#ff00ff]"
+            >
+              {CTA_BUTTON.label}
+            </Link>
+          </div>
+        </motion.div>
+      </div>
+    </motion.header>
+  );
 };
 
 export default GameHeader;
