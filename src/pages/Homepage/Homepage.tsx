@@ -1,42 +1,45 @@
 import React, { JSX } from 'react';
 import { motion, Variants } from 'framer-motion';
-import MetaversePlatformPage from 'src/components/MetaversePlatformPage/MetaversePlatformPage';
+import HomePage from 'src/components/HomePage/HomePage';
 
 /**
- * Defines the animation variants for the main page container.
- * - `hidden`: The initial state before the component enters the viewport (invisible and slightly shifted down).
- * - `visible`: The final state after the animation (fully visible and at its original position).
+ * The main application entry point. This component will be clean and simple,
+ * importing and rendering only the main 'HomePage' component to
+ * display the entire user interface. It will be wrapped in a main container
+ * with a dark, space-themed background color.
+ * @returns {JSX.Element} The rendered HomePage component.
  */
-const pageTransitionVariants: Variants = {
-  hidden: {
-    opacity: 0,
-    y: 20, // Start slightly below the final position for a subtle lift effect
-  },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.6,
-      ease: 'easeInOut',
+const Homepage = (): JSX.Element => {
+  /**
+   * Defines the animation variants for the main page container.
+   * This creates a gentle fade-in and slide-up effect when the application loads,
+   * presenting the dashboard smoothly.
+   */
+  const pageVariants: Variants = {
+    hidden: {
+      opacity: 0,
+      y: 20, // Start slightly below its final position
     },
-  },
-};
+    visible: {
+      opacity: 1,
+      y: 0, // Animate to its final position
+      transition: {
+        duration: 0.8,
+        ease: 'easeOut',
+      },
+    },
+  };
 
-/**
- * Homepage component serves as the main entry point for the application.
- * Its sole purpose is to render the MetaversePlatformPage, which contains
- * all the logic, layout, and child components for the entire application.
- * It wraps the page in a motion container to provide a smooth entry animation.
- * @returns {JSX.Element} The rendered and animated MetaversePlatformPage component.
- */
-export const Homepage = (): JSX.Element => {
   return (
     <motion.div
+      className="min-h-screen bg-[#020024] text-slate-100 antialiased"
       initial="hidden"
       animate="visible"
-      variants={pageTransitionVariants as Variants}
+      variants={pageVariants as Variants}
     >
-      <MetaversePlatformPage />
+      <HomePage />
     </motion.div>
   );
 };
+
+export default Homepage;
