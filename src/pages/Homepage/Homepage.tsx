@@ -1,29 +1,42 @@
 import React, { JSX } from 'react';
 import { motion, Variants } from 'framer-motion';
-import GameHeader from 'src/components/GameHeader/GameHeader';
-import { HeroSectionCore } from 'src/components/HeroSection/HeroSection';
-import { GameplayFeatures } from 'src/components/GameplayFeatures/GameplayFeatures';
-import ArtStyleGallery from 'src/components/ArtStyleGallery/ArtStyleGallery';
-import Footer from 'src/components/Footer/Footer';
+import MetaversePlatformPage from 'src/components/MetaversePlatformPage/MetaversePlatformPage';
 
+/**
+ * Defines the animation variants for the main page container.
+ * - `hidden`: The initial state before the component enters the viewport (invisible and slightly shifted down).
+ * - `visible`: The final state after the animation (fully visible and at its original position).
+ */
+const pageTransitionVariants: Variants = {
+  hidden: {
+    opacity: 0,
+    y: 20, // Start slightly below the final position for a subtle lift effect
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.6,
+      ease: 'easeInOut',
+    },
+  },
+};
 
-
+/**
+ * Homepage component serves as the main entry point for the application.
+ * Its sole purpose is to render the MetaversePlatformPage, which contains
+ * all the logic, layout, and child components for the entire application.
+ * It wraps the page in a motion container to provide a smooth entry animation.
+ * @returns {JSX.Element} The rendered and animated MetaversePlatformPage component.
+ */
 export const Homepage = (): JSX.Element => {
   return (
-    // The main container is now a motion component.
-    // It uses 'initial' and 'animate' props to trigger the animation on load.
-    // The 'variants' prop links to our containerVariants to control the sequence.
     <motion.div
-      className="bg-[#1a1a1a] min-h-screen"
+      initial="hidden"
+      animate="visible"
+      variants={pageTransitionVariants as Variants}
     >
-      {/* Each section is wrapped in a motion.div. */}
-      {/* They will inherit the 'initial' and 'animate' states from the parent. */}
-      {/* The 'staggerChildren' in the parent will cause them to animate one after another. */}
-        <GameHeader />
-          <HeroSectionCore/>
-          <GameplayFeatures/>
-          <ArtStyleGallery />
-        <Footer />
+      <MetaversePlatformPage />
     </motion.div>
   );
 };
