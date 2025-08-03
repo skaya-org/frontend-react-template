@@ -1,70 +1,45 @@
 import React, { JSX } from 'react';
 import { motion, Variants } from 'framer-motion';
-import Header from "src/components/Header/Header";
-import VisualizationDashboard from "src/components/VisualizationDashboard/VisualizationDashboard";
-import CircuitBuilderWorkspace from "src/components/CircuitBuilderWorkspace/CircuitBuilderWorkspace";
-import Footer from "src/components/Footer/Footer";
+import PortfolioContainer from "src/components/PortfolioContainer/PortfolioContainer";
 
 /**
- * Variants for the main container to orchestrate the animation of its children.
- * It staggers the children's animations for a sequential effect.
+ * @description Framer Motion variants for the main container's entrance animation.
+ * This creates a subtle fade-in and slide-up effect for the entire page on load.
  */
 const containerVariants: Variants = {
-  hidden: { opacity: 0 },
+  hidden: {
+    opacity: 0,
+    y: 20, // Start slightly below the final position
+  },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.2,
-    },
-  },
-};
-
-/**
- * Variants for the individual child components (Header, Main content, Footer).
- * Each item will fade in and slide up into place.
- */
-const itemVariants: Variants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
     y: 0,
-    opacity: 1,
     transition: {
-      duration: 0.5,
-      ease: "easeInOut",
+      duration: 0.8,
+      ease: 'easeOut',
     },
   },
 };
 
 /**
- * Homepage component.
- * This is the main application component that structures the entire platform.
- * It renders the Header, the primary content sections (VisualizationDashboard and CircuitBuilderWorkspace),
- * and the Footer. The layout is static to provide a seamless user experience.
- * The entire layout animates in on load for a smooth presentation.
+ * Homepage Component
+ *
+ * This component serves as the main entry point for the application.
+ * It is designed to be clean and simple, with its primary responsibility
+ * being the rendering of the PortfolioContainer. The PortfolioContainer
+ * then orchestrates the entire user experience of the portfolio.
+ *
+ * @returns {JSX.Element} The rendered Homepage component.
  */
 const Homepage = (): JSX.Element => {
   return (
     <motion.div
-      className="flex flex-col h-screen bg-neutral-100 text-neutral-800"
-      variants={containerVariants}
+      className="min-h-screen bg-slate-50 dark:bg-slate-900"
+      variants={containerVariants as Variants}
       initial="hidden"
       animate="visible"
     >
-      <motion.div variants={itemVariants as Variants}>
-        <Header />
-      </motion.div>
-      
-      <motion.main
-        className="flex flex-1 overflow-hidden"
-        variants={itemVariants as Variants}
-      >
-        <VisualizationDashboard />
-        <CircuitBuilderWorkspace />
-      </motion.main>
-
-      <motion.div variants={itemVariants as Variants}>
-        <Footer />
-      </motion.div>
+      <PortfolioContainer />
     </motion.div>
   );
 };
