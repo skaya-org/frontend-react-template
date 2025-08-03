@@ -1,6 +1,14 @@
 import React, { useState, useEffect, Suspense, JSX } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { motion, Variants } from 'framer-motion';
+import HeroSection from '../HeroSection/HeroSection';
+import HowItWorksSection from '../HowItWorksSection/HowItWorksSection';
+import ServicesSection from '../ServicesSection/ServicesSection';
+import TestimonialsSection from '../TestimonialsSection/TestimonialsSection';
+import Footer from '../Footer/Footer';
+
+// Import new sections
+
 
 //==============================================================================
 // INTERFACES
@@ -240,22 +248,22 @@ const pageContainerVariants: Variants = {
     visible: {
         opacity: 1,
         transition: {
-            staggerChildren: 0.5,
+            staggerChildren: 0.3, // Stagger children for a sequential reveal
         },
     },
 };
 
 /**
- * @description Variants for individual content sections to fade and slide in.
+ * @description Variants for individual content sections to fade and slide in from below.
  */
 const sectionVariants: Variants = {
-    hidden: { opacity: 0, y: -20 },
+    hidden: { opacity: 0, y: 50 },
     visible: {
         opacity: 1,
         y: 0,
         transition: {
-            duration: 0.8,
-            ease: 'easeInOut',
+            duration: 0.6,
+            ease: 'easeOut',
         },
     },
 };
@@ -267,38 +275,44 @@ const sectionVariants: Variants = {
 
 /**
  * The main page component for the application's landing page.
- * It orchestrates the display of a dynamic typewriter heading and a timeline of events,
- * demonstrating composition of features for a complete user experience.
+ * It orchestrates the display of various sections for a modern laundry service website.
+ * Each section animates into view sequentially for an engaging user experience.
  * It is wrapped in an ErrorBoundary to ensure robustness.
  *
  * @component
- * @param {HomePageProps} props - The props for the component, allowing content to be passed in.
  * @returns {JSX.Element} The rendered HomePage component.
  */
-const HomePage = ({ typewriterStrings, timelineItems }: HomePageProps): JSX.Element => {
+const HomePage = (): JSX.Element => {
   return (
     <motion.main
-      className="font-sans mx-auto max-w-4xl bg-gray-50 p-8 text-gray-800"
+      className="flex min-h-screen flex-col overflow-x-hidden bg-gray-50 font-sans text-gray-800 antialiased"
       variants={pageContainerVariants as Variants}
       initial="hidden"
       animate="visible"
     >
       <ErrorBoundary FallbackComponent={ErrorFallback}>
-        <Suspense fallback={<div className="p-16 text-center text-2xl text-gray-500">Loading Page...</div>}>
-          <motion.section
-            className="mb-16 text-center"
-            variants={sectionVariants as Variants}
-          >
-            <Typewriter texts={typewriterStrings} />
-          </motion.section>
+        <Suspense fallback={<div className="flex h-screen w-full items-center justify-center bg-gray-50 text-xl font-semibold text-gray-600">Loading Page...</div>}>
+          
+          <motion.div variants={sectionVariants as Variants}>
+            <HeroSection />
+          </motion.div>
+          
+          <motion.div variants={sectionVariants as Variants}>
+            <HowItWorksSection />
+          </motion.div>
 
-          <motion.section
-            className="mb-16 text-center"
-            variants={sectionVariants as Variants}
-          >
-            <h2 className="mb-8 text-4xl font-bold text-gray-900">My Journey</h2>
-            <Timeline items={timelineItems} />
-          </motion.section>
+          <motion.div variants={sectionVariants as Variants}>
+            <ServicesSection />
+          </motion.div>
+
+          <motion.div variants={sectionVariants as Variants}>
+            <TestimonialsSection />
+          </motion.div>
+
+          <motion.div variants={sectionVariants as Variants}>
+            <Footer />
+          </motion.div>
+          
         </Suspense>
       </ErrorBoundary>
     </motion.main>

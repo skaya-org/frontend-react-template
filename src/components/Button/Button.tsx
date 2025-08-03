@@ -1,169 +1,125 @@
-// New component Button
-import React, { useState, MouseEvent, ReactNode, JSX } from 'react';
+import React, { JSX, useCallback } from 'react';
 import { motion, Variants } from 'framer-motion';
 
 /**
- * Interface for the Ripple effect state.
+ * @file Button.tsx
+ * @description A self-contained, static button component styled with Tailwind CSS and animated with Framer Motion.
+ * @version 2.1.0
+ * @see
  */
-interface Ripple {
-  id: number;
-  x: number;
-  y: number;
-  size: number;
-}
+
+// --- CONSTANTS ---
 
 /**
- * Props for the Button component.
- * Extends standard HTML button attributes.
+ * The static text displayed within the button.
+ * This is defined as a constant to avoid magic strings and centralize configuration.
+ * @type {string}
  */
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  /**
-   * The content of the button.
-   */
-  children: ReactNode;
-  /**
-   * The variant of the button, which determines its style.
-   * 'primary' is the main call-to-action button with a pulse animation.
-   * @default 'primary'
-   */
-  variant?: 'primary' | 'secondary' | 'tertiary';
-}
+const BUTTON_TEXT: string = 'Schedule a Pickup';
+
+// --- ANIMATION VARIANTS ---
 
 /**
- * Framer Motion variants for the main button animations.
- * This includes states for hover, tap, and the primary button's pulse effect.
+ * Framer Motion variants for the button's interactive animations.
+ * Defines states for hover and tap (press) events.
+ * @type {Variants}
  */
 const buttonVariants: Variants = {
-  initial: {
-    scale: 1,
-  },
   hover: {
     scale: 1.05,
-    transition: { duration: 0.2, ease: 'easeOut' },
+    // The background color change is handled by Tailwind's hover:bg-blue-700
+    transition: {
+      type: 'spring',
+      stiffness: 400,
+      damping: 10,
+    },
   },
   tap: {
     scale: 0.95,
-    transition: { duration: 0.1, ease: 'easeInOut' },
-  },
-  pulse: {
-    scale: [1, 1.03, 1],
     transition: {
-      duration: 2.5,
-      ease: 'easeInOut',
-      repeat: Infinity,
-      repeatType: 'loop',
-    },
-  },
-};
-
-/**
- * Framer Motion variants for the ripple effect animation.
- * The ripple starts small and expands outwards while fading.
- */
-const rippleVariants: Variants = {
-  initial: {
-    scale: 0,
-    opacity: 1,
-  },
-  animate: {
-    scale: 4,
-    opacity: 0,
-    transition: {
-      duration: 0.6,
-      ease: 'easeOut',
+      type: 'spring',
+      stiffness: 400,
+      damping: 17,
     },
   },
 };
 
 
+// --- STYLES ---
+// All styling is now handled by Tailwind CSS classes in the JSX.
+
 /**
- * A reusable button component with built-in animations and variants.
+ * @component Button
+ * @description A simple, reusable button component styled for a primary action using Tailwind CSS.
  *
- * This component provides a styled button with several interactive features:
- * - **Variants**: 'primary', 'secondary', and 'tertiary' styles.
- * - **Soft Pulse Animation**: The 'primary' variant has a subtle pulse to draw user attention.
- * - **Ripple Effect**: A material-design-like ripple effect emanates from the click position.
- * - **Hover & Tap Scaling**: The button scales on hover and tap for immediate feedback.
+ * This component is designed to be completely self-contained, requiring no props for its operation.
+ * It renders a button with a predefined text and primary action styling. This approach is useful
+ * for highly standardized actions within an application where the button's appearance and text
+ * are always consistent.
+ *
+ * It includes a basic `onClick` handler that logs to the console to demonstrate interactivity,
+ * and it features subtle, spring-based animations on hover and tap using Framer Motion.
+ *
+ * @example
+ * // To use this component, simply import and render it:
+ * import Button from './Button';
+ *
+ * const MyComponent = () => {
+ *   return (
+ *     <div>
+ *       <p>Click the button below to schedule your pickup.</p>
+ *       <Button />
+ *     </div>
+ *   );
+ * }
+ *
+ * @returns {JSX.Element} The rendered button component.
  */
-const Button = ({
-  children,
-  variant = 'primary',
-  onClick,
-  ...rest
-}: ButtonProps): JSX.Element => {
-  const [ripples, setRipples] = useState<Ripple[]>([]);
-
-  const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
-    // Create and add the new ripple effect
-    const button = event.currentTarget;
-    const rect = button.getBoundingClientRect();
-    const size = Math.max(rect.width, rect.height);
-    const x = event.clientX - rect.left - size / 2;
-    const y = event.clientY - rect.top - size / 2;
-
-    const newRipple: Ripple = {
-      id: Date.now(),
-      x,
-      y,
-      size,
-    };
-
-    setRipples(prevRipples => [...prevRipples, newRipple]);
-
-    // Forward the click event to the parent component
-    if (onClick) {
-      onClick(event);
-    }
-  };
-
-  const handleAnimationComplete = (id: number) => {
-    setRipples(prevRipples => prevRipples.filter(ripple => ripple.id !== id));
-  };
-
-  // Base styles for all variants
-  const baseClasses =
-    'relative overflow-hidden inline-flex items-center justify-center gap-2 select-none cursor-pointer rounded-lg px-6 py-3 font-semibold text-base transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
-
-  // Variant-specific styles
-  const variantClasses: Record<NonNullable<ButtonProps['variant']>, string> = {
-    primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
-    secondary: 'bg-transparent text-blue-600 border-2 border-blue-600 hover:bg-blue-50 focus:ring-blue-500',
-    tertiary: 'bg-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-800 focus:ring-gray-500',
-  };
-
-  // Ripple color class adjusts based on button variant for better contrast
-  const rippleClass = variant === 'primary' ? 'bg-white/30' : 'bg-black/10';
-
-  // Combine all classes
-  const combinedClasses = `${baseClasses} ${variantClasses[variant]}`;
+const Button = (): JSX.Element => {
+  /**
+   * Handles the click event for the button.
+   * This function is memoized with `useCallback` for performance optimization,
+   * preventing re-creation on every render, although it's a minor optimization
+   * in a component without props or state.
+   * @returns {void}
+   */
+  const handleClick = useCallback((): void => {
+    console.log(`'${BUTTON_TEXT}' button was clicked.`);
+    // In a real-world scenario, this could trigger a state change,
+    // an API call, or a navigation event.
+  }, []);
 
   return (
     <motion.button
-      className={combinedClasses}
       onClick={handleClick}
+      aria-label={BUTTON_TEXT}
       variants={buttonVariants as Variants}
-      initial="initial"
-      animate={variant === 'primary' && !rest.disabled ? 'pulse' : 'initial'}
-      whileHover={!rest.disabled ? 'hover' : 'initial'}
-      whileTap={!rest.disabled ? 'tap' : 'initial'}
+      whileHover="hover"
+      whileTap="tap"
+      className="
+        inline-block
+        font-sans
+        font-bold
+        text-base
+        text-white
+        text-center
+        leading-normal
+        no-underline
+        bg-blue-600
+        py-3
+        px-6
+        rounded-lg
+        border-none
+        cursor-pointer
+        outline-none
+        hover:bg-blue-700
+        focus:outline-none
+        focus:ring-2
+        focus:ring-offset-2
+        focus:ring-blue-500
+      "
     >
-      {children}
-      {ripples.map(ripple => (
-        <motion.span
-          key={ripple.id}
-          className={`absolute rounded-full pointer-events-none ${rippleClass}`}
-          style={{
-            top: ripple.y,
-            left: ripple.x,
-            width: ripple.size,
-            height: ripple.size,
-          }}
-          variants={rippleVariants as Variants}
-          initial="initial"
-          animate="animate"
-          onAnimationComplete={() => handleAnimationComplete(ripple.id)}
-        />
-      ))}
+      {BUTTON_TEXT}
     </motion.button>
   );
 };

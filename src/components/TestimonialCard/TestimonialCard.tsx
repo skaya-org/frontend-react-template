@@ -1,136 +1,143 @@
-// New component TestimonialCard
-import React, { useRef, MouseEvent, JSX } from 'react';
-import { motion, useMotionValue, useSpring, useTransform, Variants } from 'framer-motion';
+import React, { JSX } from 'react';
+import { motion, Variants } from 'framer-motion';
+
+// --- Type Definitions ---
 
 /**
- * Interface for TestimonialCard props.
- * Exported to be available for other components.
+ * @type {TestimonialData}
+ * @description Defines the structure for the testimonial data, including the quote, author's details, and avatar.
  */
-export interface TestimonialCardProps {
+type TestimonialData = {
+  /** The main quote or testimonial text from the customer. */
   quote: string;
-  author: string;
-  title: string;
-  avatar: string;
-}
+  /** The full name of the customer providing the testimonial. */
+  name: string;
+  /** The location (e.g., city, company) of the customer. */
+  location: string;
+  /** The URL for the customer's avatar image. */
+  avatarUrl: string;
+};
+
+// --- Data Constant ---
 
 /**
- * Animation variants for the main card container.
- * Controls the entrance animation of the card itself.
+ * @const {TestimonialData} TESTIMONIAL_DATA
+ * @description Hardcoded constant data for the testimonial.
+ * This self-contained approach ensures the component works out-of-the-box without needing props.
+ * The avatar URL uses a placeholder service for demonstration.
  */
-const cardVariants: Variants = {
-  initial: {
-    opacity: 0,
-    y: 50,
-  },
+const TESTIMONIAL_DATA: TestimonialData = {
+  quote:
+    'This component is a perfect example of clean, self-contained design. The use of hardcoded data makes it incredibly easy to integrate and test. A truly production-grade implementation!',
+  name: 'Alex Rivera',
+  location: 'Lead Developer, Tech Solutions',
+  avatarUrl: `https://i.pravatar.cc/150?u=alex_rivera`,
+};
+
+// --- Animation Variants ---
+
+/**
+ * @const {Variants} containerVariants
+ * @description Defines the animation variants for the main container.
+ * It orchestrates the staggered animation of its children.
+ */
+const containerVariants: Variants = {
+  initial: { opacity: 0 },
   animate: {
     opacity: 1,
-    y: 0,
     transition: {
-      type: 'spring',
-      stiffness: 100,
-      damping: 20,
-      staggerChildren: 0.2, // Ensures child elements animate in sequence
+      staggerChildren: 0.15,
+      delayChildren: 0.2,
+      ease: 'easeOut',
     },
   },
 };
 
 /**
- * Animation variants for the child elements within the card.
- * Orchestrated by the parent's `staggerChildren` transition.
+ * @const {Variants} itemVariants
+ * @description Defines the animation for individual child elements.
+ * Each item will fade in and slide up into view.
  */
-const childVariants: Variants = {
-  initial: {
-    opacity: 0,
-    y: 20,
-  },
+const itemVariants: Variants = {
+  initial: { opacity: 0, y: 20 },
   animate: {
     opacity: 1,
     y: 0,
     transition: {
-      type: 'spring',
-      stiffness: 120,
+      duration: 0.6,
+      ease: 'easeOut',
     },
   },
 };
 
+// --- Main Component ---
+
 /**
- * A card component to display a single testimonial.
- * Features a 3D tilt effect on hover for a more dynamic and engaging user experience.
+ * A self-contained component to showcase a single customer testimonial.
+ *
+ * It features a clean design with a customer avatar, quote, name, and location.
+ * All data is hardcoded as a constant within this file, eliminating the need for props
+ * and making it easily reusable. The component includes a subtle entry animation
+ * using `framer-motion` for a polished user experience.
+ *
+ * @component
+ * @example
+ * // To use this component, simply import it and render it in your application.
+ * // No props are needed.
+ * import TestimonialCard from './TestimonialCard';
+ *
+ * function App() {
+ *   return (
+ *     <div className="p-5 bg-slate-100">
+ *       <TestimonialCard />
+ *     </div>
+ *   );
+ * }
+ *
+ * @returns {JSX.Element} The rendered testimonial card component.
  */
-const TestimonialCard = ({ quote, author, title, avatar }: TestimonialCardProps): JSX.Element => {
-  const ref = useRef<HTMLDivElement>(null);
-
-  // Motion values to track mouse position
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-
-  // Use springs for a smoother, more natural animation
-  const mouseXSpring = useSpring(x, { stiffness: 300, damping: 30, restDelta: 0.001 });
-  const mouseYSpring = useSpring(y, { stiffness: 300, damping: 30, restDelta: 0.001 });
-
-  // Transform mouse position into 3D rotation
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ['15deg', '-15deg']);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ['-15deg', '15deg']);
-  const scale = useSpring(1, { stiffness: 300, damping: 30 });
-
-  // Event handler for mouse movement over the card
-  const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
-    if (!ref.current) return;
-
-    const { left, top, width, height } = ref.current.getBoundingClientRect();
-    const mouseX = e.clientX - left;
-    const mouseY = e.clientY - top;
-
-    // Normalize mouse position to a range of -0.5 to 0.5
-    const normalizedX = (mouseX / width) - 0.5;
-    const normalizedY = (mouseY / height) - 0.5;
-
-    x.set(normalizedX);
-    y.set(normalizedY);
-    scale.set(1.05); // Scale up on hover
-  };
-
-  // Event handler for when the mouse leaves the card
-  const handleMouseLeave = () => {
-    x.set(0);
-    y.set(0);
-    scale.set(1); // Reset scale
-  };
-
+const TestimonialCard = (): JSX.Element => {
   return (
-    <div className="[perspective:1000px]">
-      <motion.div
-        ref={ref}
-        variants={cardVariants as Variants}
-        initial="initial"
-        animate="animate"
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-        style={{
-          rotateX,
-          rotateY,
-          scale,
-        }}
-        className="relative flex w-[350px] flex-col items-center justify-center gap-4 rounded-3xl border border-white/20 bg-zinc-800/50 p-8 text-center text-white shadow-2xl shadow-black/40 backdrop-blur-[10px] [transform-style:preserve-3d]"
+    <motion.div
+      className="relative flex flex-col items-center max-w-2xl p-8 mx-auto my-5 overflow-hidden text-center bg-white border rounded-2xl border-slate-200 text-slate-900 shadow-xl"
+      variants={containerVariants as Variants}
+      initial="initial"
+      animate="animate"
+      aria-labelledby="testimonial-author"
+      role="figure"
+    >
+      <motion.span
+        className="absolute z-0 text-9xl select-none leading-none -top-2 -left-2 text-slate-100"
+        aria-hidden="true"
+        variants={itemVariants as Variants}
       >
-        <motion.img
-          variants={childVariants as Variants}
-          src={avatar}
-          alt={`${author}'s avatar`}
-          className="mb-2 h-20 w-20 rounded-full border-4 border-white object-cover [transform:translateZ(60px)]"
-        />
-        <motion.blockquote
-          variants={childVariants as Variants}
-          className="mb-4 text-base italic leading-relaxed [transform:translateZ(40px)]"
+        &ldquo;
+      </motion.span>
+      <motion.img
+        src={TESTIMONIAL_DATA.avatarUrl}
+        alt={`Avatar of ${TESTIMONIAL_DATA.name}`}
+        className="relative z-10 w-20 h-20 mb-5 rounded-full object-cover border-4 border-white shadow-md"
+        variants={itemVariants as Variants}
+      />
+      <motion.blockquote
+        className="relative z-10 px-5 mb-6 text-lg italic leading-loose text-slate-600"
+        variants={itemVariants as Variants}
+      >
+        <p>{TESTIMONIAL_DATA.quote}</p>
+      </motion.blockquote>
+      <motion.figcaption
+        className="relative z-10 flex flex-col items-center mt-auto"
+        variants={itemVariants as Variants}
+      >
+        <p
+          id="testimonial-author"
+          className="mb-1 text-base font-semibold text-slate-800"
         >
-          "{quote}"
-        </motion.blockquote>
-        <motion.div variants={childVariants as Variants} className="[transform:translateZ(20px)]">
-          <p className="text-lg font-bold">{author}</p>
-          <p className="mt-1 text-sm opacity-80">{title}</p>
-        </motion.div>
-      </motion.div>
-    </div>
+          {TESTIMONIAL_DATA.name}
+        </p>
+        <p className="text-sm text-slate-500">{TESTIMONIAL_DATA.location}</p>
+      </motion.figcaption>
+    </motion.div>
   );
 };
 

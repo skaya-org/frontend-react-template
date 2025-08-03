@@ -1,239 +1,151 @@
-import React, { useState, JSX, ReactNode } from 'react';
-import { motion, AnimatePresence, Variants } from 'framer-motion';
-import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
-import AccordionItem from '../AccordionItem/AccordionItem';
-// The AccordionItem is assumed to handle its own internal animations,
-// such as chevron rotation, based on the `isOpen` prop.
-
-//==============================================================================
-// INTERFACES
-//==============================================================================
+import React, { JSX, Suspense } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
+import { motion, Variants } from 'framer-motion';
+import FaqItem from '../FaqItem/FaqItem';
 
 /**
- * @interface FaqItemData
- * @description Represents the data structure for a single FAQ item.
- * This interface is exported to allow type sharing across components.
+ * @typedef Faq
+ * @description Defines the structure for a single Frequently Asked Question item.
+ * This type ensures that all FAQ data adheres to a consistent format.
+ * @property {string} id - A unique identifier for the FAQ item, used for React keys.
+ * @property {string} question - The question text.
+ * @property {string} answer - The answer text.
  */
-export interface FaqItemData {
-  /**
-   * @property {string} id - A unique identifier for the FAQ item.
-   * Essential for React's `key` prop and for managing accordion state.
-   */
+type Faq = {
   id: string;
-
-  /**
-   * @property {string} question - The question text for the FAQ item.
-   */
   question: string;
-
-  /**
-   * @property {ReactNode} answer - The answer content for the FAQ item.
-   * Can be a simple string or complex JSX for rich content.
-   */
-  answer: ReactNode;
-}
+  answer: string;
+};
 
 /**
- * @interface FaqSectionProps
- * @description Defines the props for the FaqSection component.
- * This interface is exported to ensure type-safe usage of the component.
+ * @const FAQ_DATA
+ * @description A constant array of FAQ items. This self-contained data source
+ * allows the component to be used without passing any props, simplifying its integration
+ * and ensuring consistency across the application.
  */
-export interface FaqSectionProps {
-  /**
-   * @property {string} title - The main title for the FAQ section.
-   */
-  title: string;
-
-  /**
-   * @property {string} [subtitle] - An optional subtitle or introductory text for the section.
-   */
-  subtitle?: string;
-
-  /**
-   * @property {FaqItemData[]} items - An array of FAQ items to be displayed in the accordion.
-   */
-  items: FaqItemData[];
-
-  /**
-   * @property {string} [className] - Optional CSS class name for custom styling of the root section element.
-   */
-  className?: string;
-
-  /**
-   * @property {boolean} [allowMultipleOpen=false] - If true, multiple FAQ items can be open simultaneously.
-   * If false (default), opening one item will close any other open item.
-   */
-  allowMultipleOpen?: boolean;
-}
-
-//==============================================================================
-// HELPER COMPONENTS
-//==============================================================================
+const FAQ_DATA: Readonly<Faq[]> = [
+  {
+    id: 'faq-1',
+    question: 'What is the "One-Click Deploy" feature?',
+    answer:
+      'Our "One-Click Deploy" feature streamlines the deployment process by allowing you to publish your web application to a production environment with a single action. It automates the build, testing, and deployment pipeline, saving you time and reducing the risk of manual errors.',
+  },
+  {
+    id: 'faq-2',
+    question: 'Do you offer a free trial for your services?',
+    answer:
+      'Yes, we offer a 14-day free trial with no credit card required. During the trial, you have access to all our premium features, allowing you to fully evaluate our platform and see how it fits your workflow.',
+  },
+  {
+    id: 'faq-3',
+    question: 'What kind of support can I expect?',
+    answer:
+      'We provide 24/7 premium support through email and live chat for all our paid plans. Our dedicated support team is composed of experienced developers ready to help you with any technical challenges. Free plan users have access to our extensive documentation and community forums.',
+  },
+  {
+    id: 'faq-4',
+    question: 'Can I integrate my existing tools with your platform?',
+    answer:
+      'Absolutely. Our platform is built with extensibility in mind. We offer a robust API and native integrations for popular tools like GitHub, Slack, and Jira. You can easily connect your existing CI/CD pipelines and developer tools.',
+  },
+  {
+    id: 'faq-5',
+    question: 'How is billing handled?',
+    answer:
+      'Billing is handled on a monthly or annual subscription basis. You can upgrade, downgrade, or cancel your plan at any time through your account dashboard. We accept all major credit cards and offer invoicing for enterprise clients.',
+  },
+];
 
 /**
- * Renders a fallback UI when an error occurs within the FAQ list.
- * @param {FallbackProps} props - Props provided by React Error Boundary, including the error object.
- * @returns {JSX.Element} The fallback UI component.
+ * A fallback component to display when an error occurs within the FAQ list.
+ * This ensures the rest of the application remains functional even if this section fails.
+ * @returns {JSX.Element} A user-friendly error message.
  */
-const FaqListErrorFallback = ({ error }: FallbackProps): JSX.Element => (
-  <div role="alert" className="p-4 text-sm text-red-800 rounded-lg bg-red-50 border border-red-200">
-    <p className="font-medium">Sorry, we couldn't load the FAQ content.</p>
-    <pre className="mt-2 text-xs whitespace-pre-wrap">{error.message}</pre>
+const FaqErrorFallback = (): JSX.Element => (
+  <div
+    role="alert"
+    className="text-center rounded-lg border border-red-500 bg-red-100 px-6 py-4 text-red-700"
+  >
+    <p className="mb-2 font-medium">
+      Oops! We couldn't load the questions.
+    </p>
+    <p className="m-0 text-sm">
+      Please try refreshing the page. If the problem persists, our team has
+      been notified.
+    </p>
   </div>
 );
 
-//==============================================================================
-// MAIN COMPONENT
-//==============================================================================
-
 /**
- * @component FaqSection
- * @description A flexible and accessible FAQ accordion section.
- * It displays a list of questions and answers, allowing users to expand and collapse items.
+ * Renders a Frequently Asked Questions (FAQ) section.
  *
- * @param {FaqSectionProps} props - The props for the component.
- * @returns {JSX.Element} The rendered FAQ section.
+ * This component is self-contained and uses a predefined constant for its data,
+ * requiring no props from its parent. It features a title and an animated list of
+ * collapsible Q&A items rendered by the `FaqItem` component.
+ * Proper error handling is implemented to ensure robustness.
  *
+ * @component
  * @example
- * const faqs = [
- *   { id: 'faq1', question: 'What is React?', answer: 'A JavaScript library for building user interfaces.' },
- *   { id: 'faq2', question: 'What is TypeScript?', answer: <p>A superset of JavaScript that adds static types.</p> }
- * ];
- *
- * <FaqSection title="Frequently Asked Questions" items={faqs} />
+ * // This component requires no props.
+ * <FaqSection />
+ * @returns {JSX.Element} The rendered `FaqSection` component.
  */
-const FaqSection = ({
-  title,
-  subtitle,
-  items,
-  className = '',
-  allowMultipleOpen = false
-}: FaqSectionProps): JSX.Element => {
-  // State to manage which accordion items are expanded.
-  const [expandedIds, setExpandedIds] = useState<string[]>([]);
-
-  // --- Animation Variants ---
-  /**
-   * Variants for container elements to orchestrate staggered animations for their children.
-   */
+const FaqSection = (): JSX.Element => {
+  // Variants for the main container to orchestrate staggered animations for its children.
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.2,
+        staggerChildren: 0.1, // Time delay between each child animation
+        delayChildren: 0.2,   // Delay before the first child starts animating
       },
     },
   };
 
-  /**
-   * Variants for individual items (like titles or FAQ rows) to fade in and slide up.
-   */
+  // Variants for individual items (title and each FAQ item) to fade and slide in.
   const itemVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.5, ease: 'easeOut' },
+      transition: {
+        duration: 0.5,
+        ease: 'easeOut',
+      },
     },
-  };
-
-  /**
-   * Variants for the accordion content panel to animate its height and opacity.
-   */
-  const contentVariants: Variants = {
-    collapsed: {
-      opacity: 0,
-      height: 0,
-      transition: { duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] },
-    },
-    expanded: {
-      opacity: 1,
-      height: 'auto',
-      transition: { duration: 0.4, ease: [0.04, 0.62, 0.23, 0.98] },
-    },
-  };
-
-  /**
-   * Toggles the expanded state of a given FAQ item.
-   * @param {string} id - The ID of the FAQ item to toggle.
-   */
-  const handleToggle = (id: string): void => {
-    setExpandedIds(currentIds => {
-      const isCurrentlyExpanded = currentIds.includes(id);
-
-      if (allowMultipleOpen) {
-        // Add or remove the ID from the array
-        return isCurrentlyExpanded
-          ? currentIds.filter(itemId => itemId !== id)
-          : [...currentIds, id];
-      } else {
-        // If it's already open, close it. Otherwise, open it and close others.
-        return isCurrentlyExpanded ? [] : [id];
-      }
-    });
   };
 
   return (
-    <section
-      className={`bg-slate-50 py-16 sm:py-24 overflow-hidden ${className}`}
-      aria-labelledby="faq-section-title"
+    <motion.section
+      aria-labelledby="faq-title"
+      className="mx-auto my-16 max-w-3xl p-8 font-sans text-gray-800"
+      variants={containerVariants as Variants}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.1 }} // Animate when 10% of the section is in view
     >
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        <motion.div
-          className="text-center"
-          variants={containerVariants as Variants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.3 }}
-        >
-          <motion.h2
-            id="faq-section-title"
-            className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl"
-            variants={itemVariants as Variants}
-          >
-            {title}
-          </motion.h2>
-          {subtitle && (
-            <motion.p
-              className="mt-4 text-lg leading-8 text-slate-600"
-              variants={itemVariants as Variants}
-            >
-              {subtitle}
-            </motion.p>
-          )}
-        </motion.div>
+      <motion.h2
+        id="faq-title"
+        className="mb-12 text-center text-3xl font-bold text-gray-900 md:text-4xl"
+        variants={itemVariants as Variants}
+      >
+        Frequently Asked Questions
+      </motion.h2>
 
-        <ErrorBoundary FallbackComponent={FaqListErrorFallback}>
-          {!items || items.length === 0 ? (
-            <p className="mt-16 text-center text-slate-600">No frequently asked questions available at the moment.</p>
-          ) : (
-            <motion.div
-              className="mt-12 space-y-4"
-              variants={containerVariants as Variants}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.1 }}
-            >
-              {items.map(({ id, question, answer }) => {
-                const isExpanded = expandedIds.includes(id);
-
-                return (
-                  <motion.div
-                    key={id}
-                    variants={itemVariants as Variants}
-                    className="rounded-lg border border-slate-200 bg-white shadow-sm"
-                  >
-             
-                  </motion.div>
-                );
-              })}
-            </motion.div>
-          )}
-        </ErrorBoundary>
-      </div>
-    </section>
+      <ErrorBoundary FallbackComponent={FaqErrorFallback}>
+        <Suspense fallback={<div className="text-center">Loading questions...</div>}>
+          <div className="flex flex-col gap-4">
+            {FAQ_DATA.map((faq) => (
+              <motion.div key={faq.id} variants={itemVariants as Variants}>
+                <FaqItem
+                />
+              </motion.div>
+            ))}
+          </div>
+        </Suspense>
+      </ErrorBoundary>
+    </motion.section>
   );
 };
 
