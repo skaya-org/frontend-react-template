@@ -1,5 +1,14 @@
 import React, { JSX, ReactNode } from 'react';
 import { motion, Variants } from 'framer-motion';
+import ParticleEffect from 'src/components/ParticleEffect/ParticleEffect';
+import Navbar from 'src/components/Navbar/Navbar';
+import BridgeInterfaceContainer from 'src/components/BridgeInterface/BridgeInterface';
+import Interactive3DNetwork from 'src/components/Interactive3DNetwork/Interactive3DNetwork';
+import HolographicDashboard from 'src/components/HolographicDashboard/HolographicDashboard';
+import SafeTransactionVisualizer from 'src/components/TransactionVisualizer/TransactionVisualizer';
+
+// --- NEW COMPONENT IMPORTS ---
+// @reason Imports for the new cross-chain integration website design.
 
 // As per the instructions, all components are defined within this single file.
 
@@ -13,7 +22,7 @@ const pageContainerVariants: Variants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.15,
+      staggerChildren: 0.25,
     },
   },
 };
@@ -27,343 +36,200 @@ const sectionItemVariants: Variants = {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.5,
+      duration: 0.6,
       ease: 'easeOut',
     },
   },
 };
 
 /**
- * @reason Variants for lists that need to stagger their items' appearance on scroll.
+ * @reason Variants for the hero section to create a cascading text effect.
  */
-const listStaggerVariants: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.08,
+const heroContainerVariants: Variants = {
+    hidden: {},
+    visible: {
+        transition: {
+            staggerChildren: 0.1,
+            delayChildren: 0.3, // Allows the section itself to appear first
+        },
     },
-  },
 };
 
 /**
- * @reason Variants for individual items within a staggered, scroll-triggered list.
+ * @reason Variants for the hero section's title and paragraph for a dramatic, futuristic entrance.
  */
-const listItemVariants: Variants = {
-  hidden: { opacity: 0, y: 15 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.4,
-      ease: 'easeOut',
+const heroItemVariants: Variants = {
+    hidden: { opacity: 0, y: 50, filter: 'blur(8px)' },
+    visible: {
+        opacity: 1,
+        y: 0,
+        filter: 'blur(0px)',
+        transition: {
+            duration: 0.9,
+            ease: [0.6, -0.05, 0.01, 0.99], // A custom cubic-bezier for a refined effect
+        },
     },
-  },
 };
 
 /**
- * @reason Variants for the floating dock, controlling its entrance and staggering tabs.
+ * @reason Variants for interactive cards that have a neon glow on hover, fitting the futuristic theme.
  */
-const dockVariants: Variants = {
-  hidden: { y: 100, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: {
-      type: 'spring',
-      stiffness: 120,
-      damping: 20,
-      staggerChildren: 0.1,
-      delay: 0.5, // Delay so it appears after the main content has started animating.
+const glowingCardVariants: Variants = {
+    rest: {
+        scale: 1,
+        // The glow color is controlled by a CSS variable `--glow-rgb` for reusability.
+        boxShadow: '0 0 15px rgba(var(--glow-rgb), 0.2)',
+        transition: {
+            duration: 0.5,
+            ease: 'easeOut',
+        },
     },
-  },
+    hover: {
+        scale: 1.03,
+        boxShadow: '0 0 40px rgba(var(--glow-rgb), 0.4)',
+        transition: {
+            type: 'spring',
+            stiffness: 300,
+            damping: 15,
+        },
+    },
 };
 
 /**
- * @reason Variants for each tab in the floating dock, including entrance, hover and tap effects.
+ * @reason Variants for the holographic dashboard to make it "lift" and glow on hover.
  */
-const tabVariants: Variants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: { y: 0, opacity: 1 },
-  hover: { scale: 1.1, transition: { type: 'spring', stiffness: 300 } },
-  tap: { scale: 0.9 },
+const holographicDashboardVariants: Variants = {
+    rest: {
+        y: 0,
+        scale: 1,
+        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+    },
+    hover: {
+        y: -10,
+        scale: 1.02,
+        // A purple shadow to create a distinct holographic aura.
+        boxShadow: '0 25px 50px -12px rgba(139, 92, 246, 0.35)',
+        transition: {
+            type: 'spring',
+            stiffness: 200,
+            damping: 15,
+        },
+    },
 };
 
 
-// --- SVG ICONS (as React Components) ---
+
+
+
+
+// --- NEW MAIN PAGE COMPONENT ---
 
 /**
- * @reason Icon for the 'Home' tab in the floating dock.
+ * @reason A cutting-edge page for cross-chain integration, featuring a futuristic design.
  */
-const HomeIcon = (): JSX.Element => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-full w-full" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-  </svg>
-);
-
-/**
- * @reason Icon for the 'Services' tab in the floating dock.
- */
-const ServicesIcon = (): JSX.Element => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-full w-full" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0l2-2m0 0l2 2m-2-2v2" />
-    </svg>
-);
-
-/**
- * @reason Icon for the 'Contact' tab in the floating dock.
- */
-const ContactIcon = (): JSX.Element => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-full w-full" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-    </svg>
-);
-
-
-// --- REUSABLE UI COMPONENTS ---
-
-/**
- * @reason A small, pill-shaped component to display a single skill or medical service.
- */
-const SkillPill = ({ skill }: { skill: string }): JSX.Element => (
-  <span className="m-1 inline-block rounded-full bg-sky-100 px-3 py-1 text-sm font-medium text-sky-800">
-    {skill}
-  </span>
-);
-
-/**
- * @reason A component to display a single entry in the experience or departments section.
- */
-const ExperienceItem = ({ logo, title, details, duration }: { logo: string, title: string, details: string, duration: string }): JSX.Element => (
-  <div className="flex gap-4 py-4">
-    <img src={logo} alt={`${title} logo`} className="h-12 w-12 flex-shrink-0 object-contain" />
-    <div className="flex flex-1 flex-col">
-      <h3 className="m-0 text-base font-semibold text-gray-900">{title}</h3>
-      <p className="my-0.5 text-sm text-gray-600">{details}</p>
-      <p className="my-0.5 text-xs text-gray-500">{duration}</p>
-    </div>
-  </div>
-);
-
-/**
- * @reason A reusable card component that serves as a container for different sections of the profile.
- */
-const ProfileSectionCard = ({ title, children }: { title: string, children: ReactNode }): JSX.Element => (
-  <motion.div 
-    className="mb-4 overflow-hidden rounded-lg border border-gray-200 bg-white"
-    variants={sectionItemVariants as Variants}
-  >
-    <div className="border-b border-gray-200 px-6 py-4">
-      <h2 className="m-0 text-xl font-semibold text-gray-900">{title}</h2>
-    </div>
-    <div className="px-6 py-4">
-      {children}
-    </div>
-  </motion.div>
-);
-
-/**
- * @reason Represents a single clickable tab within the floating dock.
- */
-const DockTab = ({ icon, label }: { icon: JSX.Element, label: string }): JSX.Element => (
-    <motion.button 
-        className="flex w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg py-2 text-white transition-colors duration-200 hover:bg-white/10 focus:bg-white/20 focus:outline-none"
-        variants={tabVariants as Variants}
-        whileHover="hover"
-        whileTap="tap"
-    >
-      <div className="h-6 w-6">{icon}</div>
-      <span className="text-xs">{label}</span>
-    </motion.button>
-);
-
-
-// --- PROFILE SECTION COMPONENTS ---
-
-/**
- * @reason The main header component for the Apollo Hospital profile page.
- */
-const ProfileHeader = (): JSX.Element => {
-    const profileData = {
-        bannerUrl: 'https://picsum.photos/300/150.jpg',
-        logoUrl: 'https://picsum.photos/200/300',
-        name: 'Apollo Hospitals',
-        tagline: 'Touching Lives',
-        location: 'Chennai, India · 2,000,000+ followers',
-    };
-
+const CrossChainPlatformPage = (): JSX.Element => {
     return (
-        <motion.div 
-          className="mb-4 overflow-hidden rounded-lg border border-gray-200 bg-white"
-          variants={sectionItemVariants as Variants}
-        >
-            <div className="relative">
-                <img src={profileData.bannerUrl} alt="Hospital banner" className="h-48 w-full object-cover" />
-                <div className="absolute left-6 top-[120px] h-[150px] w-[150px] rounded-full border-4 border-white bg-white p-1 shadow-md">
-                    <img src={profileData.logoUrl} alt="Apollo Hospital logo" className="h-full w-full rounded-full object-contain" />
-                </div>
+        <div className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-gray-900 via-slate-900 to-black font-sans text-gray-100">
+            {/* Background particle effect for a futuristic feel */}
+            <div className="absolute inset-0 z-0">
+                <ParticleEffect />
             </div>
-            <div className="px-6 pb-6 pt-[70px]">
-                <h1 className="mb-1 text-2xl font-bold text-gray-900">{profileData.name}</h1>
-                <p className="mb-2 text-base text-gray-800">{profileData.tagline}</p>
-                <p className="m-0 text-sm text-gray-500">{profileData.location}</p>
+
+            {/* Main container for layout and animations */}
+            <div className="relative z-10">
+                <Navbar />
+
+                <motion.main
+                    className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8"
+                    variants={pageContainerVariants as Variants}
+                    initial="hidden"
+                    animate="visible"
+                >
+                    {/* Hero Section with Title */}
+                    <motion.section
+                        variants={sectionItemVariants as Variants}
+                        className="mb-24 text-center"
+                    >
+                        <motion.div variants={heroContainerVariants as Variants}>
+                            <motion.h1
+                                variants={heroItemVariants as Variants}
+                                className="mb-4 bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-5xl font-bold tracking-tight text-transparent md:text-7xl">
+                                Seamless Cross-Chain Integration
+                            </motion.h1>
+                            <motion.p
+                                variants={heroItemVariants as Variants}
+                                className="mx-auto mb-12 max-w-3xl text-lg text-gray-400 md:text-xl">
+                                Experience the future of interoperability. Transfer assets and data across blockchains with unparalleled speed and security.
+                            </motion.p>
+                        </motion.div>
+                    </motion.section>
+
+                    {/* Bridge and 3D Network Section */}
+                    <motion.section
+                        variants={sectionItemVariants as Variants}
+                        className="mb-24 grid items-center gap-12 md:grid-cols-5"
+                    >
+                        <motion.div
+                            className="rounded-2xl border border-cyan-500/20 bg-slate-800/50 p-6 shadow-lg shadow-cyan-500/10 backdrop-blur-sm md:col-span-2"
+                            initial="rest"
+                            whileHover="hover"
+                            variants={glowingCardVariants as Variants}
+                            style={{ '--glow-rgb': '6, 182, 212' } as React.CSSProperties}
+                        >
+                             <h2 className="mb-6 text-center text-3xl font-bold text-white">
+                                Initiate a Transfer
+                            </h2>
+                            <BridgeInterfaceContainer />
+                        </motion.div>
+                        <motion.div
+                            className="flex h-[450px] flex-col items-center justify-center md:col-span-3"
+                            whileHover={{ scale: 1.05 }}
+                            transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+                        >
+                            <Interactive3DNetwork />
+                             <p className="mt-4 text-sm italic text-gray-500">Drag to rotate, scroll to zoom the interactive network.</p>
+                        </motion.div>
+                    </motion.section>
+
+                    {/* Holographic Dashboard Section */}
+                    <motion.section variants={sectionItemVariants as Variants} className="mb-24">
+                        <h2 className="mb-10 bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-center text-4xl font-bold text-transparent">
+                           Holographic Dashboard
+                        </h2>
+                        <motion.div
+                            initial="rest"
+                            whileHover="hover"
+                            variants={holographicDashboardVariants as Variants}
+                        >
+                            <HolographicDashboard />
+                        </motion.div>
+                    </motion.section>
+
+                    {/* Transaction Visualizer Section */}
+                    <motion.section variants={sectionItemVariants as Variants} className="text-center">
+                         <h2 className="mb-10 bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-center text-4xl font-bold text-transparent">
+                           Live Smart Contract Interactions
+                        </h2>
+                        <motion.div
+                            className="relative mx-auto h-[300px] w-full max-w-4xl overflow-hidden rounded-xl border border-purple-500/20 bg-black/30 shadow-lg shadow-purple-500/10"
+                            initial="rest"
+                            whileHover="hover"
+                            variants={glowingCardVariants as Variants}
+                            style={{ '--glow-rgb': '139, 92, 246' } as React.CSSProperties}
+                        >
+                             <SafeTransactionVisualizer />
+                        </motion.div>
+                    </motion.section>
+                </motion.main>
             </div>
-        </motion.div>
-    );
-};
-
-/**
- * @reason A section dedicated to the 'About Us' information for Apollo Hospital.
- */
-const AboutSection = (): JSX.Element => {
-    const aboutText = "Apollo Hospitals Enterprise Limited is an Indian multinational healthcare group headquartered in Chennai. It is the largest hospital chain in India, with a network of 71 owned and managed hospitals. Along with the eponymous hospital chain, the company also operates pharmacies, primary care and diagnostic centres, and telehealth clinics through its subsidiaries.";
-
-    return (
-        <ProfileSectionCard title="About">
-            <p className="m-0 text-sm leading-relaxed text-gray-700">
-                {aboutText}
-            </p>
-        </ProfileSectionCard>
-    );
-};
-
-/**
- * @reason A section that displays the hospital's key departments or historical milestones.
- */
-const ExperienceSection = (): JSX.Element => {
-    const departmentsData = [
-        {
-            logo: 'https://cdn-icons-png.flaticon.com/512/2833/2833778.png',
-            title: 'Cardiology Department',
-            details: 'Pioneering cardiac care in India since 1983.',
-            duration: 'Key Achievement: First successful heart transplant in the region.'
-        },
-        {
-            logo: 'https://cdn-icons-png.flaticon.com/512/3034/3034808.png',
-            title: 'Oncology Center',
-            details: 'Comprehensive cancer care with advanced technology.',
-            duration: 'Key Technology: Proton Therapy Center'
-        },
-        {
-            logo: 'https://cdn-icons-png.flaticon.com/512/2966/2966327.png',
-            title: 'Neurology & Neurosurgery',
-            details: 'Treating a wide range of neurological disorders.',
-            duration: 'Team of 50+ world-renowned neurologists.'
-        },
-    ];
-
-    return (
-        <ProfileSectionCard title="Departments">
-            <motion.div 
-              className="-my-4 divide-y divide-gray-200"
-              variants={listStaggerVariants as Variants}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.2 }}
-            >
-                {departmentsData.map((exp, index) => (
-                    <motion.div key={index} variants={listItemVariants as Variants}>
-                      <ExperienceItem
-                          logo={exp.logo}
-                          title={exp.title}
-                          details={exp.details}
-                          duration={exp.duration}
-                      />
-                    </motion.div>
-                ))}
-            </motion.div>
-        </ProfileSectionCard>
-    );
-};
-
-/**
- * @reason A section to showcase the various medical services and specialties offered by Apollo Hospital.
- */
-const SkillsSection = (): JSX.Element => {
-    const skillsData = [
-        'Robotic Surgery', 'Proton Therapy', 'Emergency Care', 'Telemedicine', 'Diagnostic Services',
-        'Organ Transplantation', 'Preventive Health Checks', 'Maternity & Child Care', 'Advanced Research', 'Medical Education'
-    ];
-
-    return (
-        <ProfileSectionCard title="Services & Specialties">
-            <motion.div 
-              className="-m-1 flex flex-wrap"
-              variants={listStaggerVariants as Variants}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.1 }}
-            >
-                {skillsData.map((skill, index) => (
-                    <motion.div key={index} variants={listItemVariants as Variants}>
-                        <SkillPill skill={skill} />
-                    </motion.div>
-                ))}
-            </motion.div>
-        </ProfileSectionCard>
-    );
-};
-
-
-// --- FLOATING DOCK COMPONENT ---
-
-/**
- * @reason A container that is fixed to the bottom of the viewport, acting as a navigation dock.
- */
-const FloatingDock = (): JSX.Element => {
-    const tabsData = [
-        { icon: <HomeIcon />, label: 'Home' },
-        { icon: <ServicesIcon />, label: 'Services' },
-        { icon: <ContactIcon />, label: 'Contact' },
-    ];
-
-    return (
-        <motion.div
-            className="fixed bottom-5 left-1/2 z-50 flex -translate-x-1/2 gap-2 rounded-2xl bg-slate-800 p-2 shadow-lg"
-            variants={dockVariants as Variants}
-            initial="hidden"
-            animate="visible"
-        >
-            {tabsData.map((tab, index) => (
-                <DockTab key={index} icon={tab.icon} label={tab.label} />
-            ))}
-        </motion.div>
-    );
-};
-
-
-// --- MAIN PAGE COMPONENT ---
-
-/**
- * @reason The main page component that assembles the entire LinkedIn-style profile for Apollo Hospital.
- */
-const ApolloProfilePage = (): JSX.Element => {
-    return (
-        <div className="min-h-screen bg-gray-100 font-sans">
-            <motion.main 
-              className="mx-auto max-w-3xl p-5"
-              variants={pageContainerVariants as Variants}
-              initial="hidden"
-              animate="visible"
-            >
-                <ProfileHeader />
-                <AboutSection />
-                <ExperienceSection />
-                <SkillsSection />
-            </motion.main>
-            <FloatingDock />
         </div>
     );
 };
 
 /**
  * This is the main component for the Homepage.tsx file.
- * It renders the complete Apollo Hospital profile page.
+ * It renders the complete cross-chain platform page.
  */
-const Homepage = (): JSX.Element => {
-  return (
-    <ApolloProfilePage />
-  );
-};
 
-export default Homepage;
+
+export default CrossChainPlatformPage;
