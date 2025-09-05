@@ -4,11 +4,7 @@ import Homepage from './pages/Homepage/Homepage';
 
 function App() {
   return (
-    <Router>
-        <Routes>
-          <Route path="/" element={<Homepage />} />
-        </Routes>
-    </Router>
+   <Homepage />
   );
 }
 
